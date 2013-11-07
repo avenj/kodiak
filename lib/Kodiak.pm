@@ -1,7 +1,5 @@
 package Kodiak;
-use 5.10.1;
-use strictures 1;
-
+use strict; use warnings;
 
 
 1;

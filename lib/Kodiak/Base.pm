@@ -22,6 +22,7 @@ sub import {
     *{ $caller .'::has' } = sub { add_attr($caller, @_) };
   }
   
+  Carp->import(qw/carp croak confess/);
   strict->import;
   warnings->import;
   utf8->import;
