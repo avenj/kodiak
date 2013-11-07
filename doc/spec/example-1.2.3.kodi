@@ -1,0 +1,64 @@
+---
+# 'meta' section parsed first to create template vars for later:
+meta:
+  version: "1.2.3"
+  slot: 0
+  description: "An example package"
+  homepage: "http://www.example.org"
+  license: "perl"
+  keywords:
+    - "x32"
+    - "x64"
+  # Option flags:
+  set:
+    "nostrip"
+
+# templated strings:
+fetch:
+  - "http://www.example.org/example-%version%.tgz"
+
+# hard-coded dependencies (more can be added in pl_init):
+depends:
+  build:
+    - "lang/perl"
+  runtime:
+    - "app/foobar-0.1"
+
+pl_init: >
+  # Code executed in safe compartment at pkg parse time:
+  my $foo = 'bar';
+  if ($foo eq 'bar') {
+    # KODI constant installed
+    # Needs to present API to all build-munging methods:
+    KODI->depends_on('bar', '1.0');
+    # API needs a way to save metadata for later phases:
+    KODI->stash->set(bar => 1);
+    # API needs a way to set up environment vars used for shelling out:
+    KODI->shellenv->set(CFLAGS => "-02");
+  }
+
+pl_fetch: >
+  # ... optional code to run to fetch pkg ...
+  # Present fetch list if available:
+  my @urls = KODI->fetch_list;
+  # Present a simplistic User Agent that fetches to preconfigured fetchdir:
+  for (@urls) {
+    KODI->ua->get($_);
+  }
+
+pl_unpack: >
+  # ... code executed in safe compartment to unpack ...
+
+pl_build: >
+  # ... code executed in safe compartment to build pkg ...
+  # Needs to be able to munge env vars used to execute actual build via API
+
+pl_test: >
+  # ... code executed in safe compartment to test pkg ...
+
+pl_preinst: >
+  # ... code executed in safe compartment preinstall ...
+
+pl_install: >
+  # ... code executed in safe compartment to install ...
+
