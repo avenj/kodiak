@@ -17,7 +17,7 @@ sub import {
 
   my $caller = caller;
 
-  { no strict 'refs';
+  { no strict 'refs'; no warnings 'redefine';
     push @{ $caller .'::ISA' }, $super;
     *{ $caller .'::has' } = sub { add_attr($caller, @_) };
   }
