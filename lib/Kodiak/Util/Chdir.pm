@@ -10,7 +10,7 @@ use Scalar::Util 'reftype';
 use Exporter 'import';
 our @EXPORT = 'cd';
 
-sub cd (&&) {
+sub cd ($&) {
   my ($dir, $code) = @_;
 
   croak "No such directory: $dir" unless -e $dir;
