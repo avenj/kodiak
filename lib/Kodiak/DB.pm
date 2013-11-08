@@ -25,6 +25,8 @@ has _lockfh   => sub { undef };
 has _lockmode => sub { undef };
 
 sub open {
+  # tie, sync, dup, lock, retie dance
+  # (safe locking)
   my ($self, %args) = @_;
   my $readonly = $args{ro} || $args{readonly} || 0;
 
@@ -156,9 +158,8 @@ sub delete {
   croak "Attempted to delete() from closed db" unless $self->is_open;
   croak "Attempted to delete() on read-only db"
     if $self->_lockmode == LOCK_SH;
-  exists $self->_tied->{$key} ?
-    CORE::delete( $self->_tied->{$key} )
-    : ()
+  CORE::delete $self->_tied->{$key};
+  $self
 }
 
 
