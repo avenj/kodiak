@@ -11,11 +11,16 @@ has _root => sub {
   );
 };
 
-has scheduled => sub { [] };
+has _scheduled => sub { [] };
+
+sub scheduled {
+  my ($self) = shift;
+  $self->_order_deps
+}
 
 sub __resolve {
   #  my $result = [];
-  #  __resolve( $startnode, $result, +{}, [] )
+  #  __resolve( $startnode, $result, +{}, +{} )
   #                                # ^ last two params are discarded later
   my ($node, $resolved, $res_byatom, $unresolved) = @_;
   # Add this atom to the unresolved list:
@@ -29,11 +34,11 @@ sub __resolve {
     # Circular dep if this edge's atom is in the unresolved list:
     if (exists $unresolved->{ $edge->atom }) {
       die "Circular dependency detected: ",
-        $node->name, ' -> ', $edge->name, "\n"
+        $node->atom, ' -> ', $edge->atom, "\n"
     }
 
     # Recurse into dependency's node:
-    __resolve($edge, $resolved, $unresolved)
+    __resolve($edge, $resolved, $res_byatom, $unresolved)
   }
 
   # Successful resolution;
@@ -41,14 +46,15 @@ sub __resolve {
   # remove its atom from the unresolved list, record the change
   # in the $res_byatom hash for quick checking on further iterations:
   push @$resolved, $node;
-  $res_byatom->{ $node->atom } = delete $unresolved->{ $node->atom }
+  $res_byatom->{ $node->atom } = delete $unresolved->{ $node->atom };
 }
 
 sub _order_deps {
   my ($self) = @_;
   my $scheduled = [];
-  __resolve( $self->_root, $scheduled, +{}, [] );
-  $self->scheduled( $scheduled );
+  __resolve( $self->_root, $scheduled, +{}, +{} );
+  $self->_scheduled( $scheduled );
+  $self->_scheduled
 }
 
 
@@ -79,6 +85,7 @@ sub add_root_nodes {
   my ($self, @nodes) = @_;
   $self->_root->add_depends($_) for @nodes;
   $self->_order_deps;
+  $self
 }
 
 sub remove_root_nodes {
