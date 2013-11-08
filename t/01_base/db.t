@@ -54,8 +54,10 @@ is_deeply $ref,
   +{ deep => [ struct => 1 ] },
   'get ok';
 
+
 # close()
 ok $db->close, 'close ok';
+
 
 # is_open()
 ok !$db->is_open, 'is_open false ok';
@@ -72,16 +74,23 @@ is_deeply $utf,
   +{ a => "\x{263A}" },
   'unicode get() ok';
 
-$db->close;
+ok $db->keys == 2, 'keys count ok';
 
 # delete
-# FIXME
+ok $db->delete('unicode'), 'delete ok';
+ok $db->keys == 1, 'keys count ok';
+ok !$db->get('unicode'), 'deleted key ok';
+
+$db->close;
+
 
 # ro open
 ok $db->open(ro => 1), 'read-only open ok';
 ok $db->get('test'), 'read-only get ok';
 eval {; $db->set(foo => +{}) };
 ok $@, 'read-only set fails';
+eval {; $db->delete('test') };
+ok $@, 'read-only delete fails';
 
 $db->close;
 
