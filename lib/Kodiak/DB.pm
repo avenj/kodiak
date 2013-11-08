@@ -28,6 +28,9 @@ sub open {
   my ($self, %args) = @_;
   my $readonly = $args{ro} || $args{readonly} || 0;
 
+  croak "No path() currently specified"
+    unless defined $self->path;
+
   if ($self->is_open) {
     carp "Attempted to open() already open DB";
     return
@@ -117,6 +120,7 @@ sub close {
   $self
 }
 
+
 sub keys {
   my ($self) = @_;
   croak "Attempted to retrieve keys() from closed db" unless $self->is_open;
@@ -130,10 +134,19 @@ sub get {
   $self->_tied->{$key}
 }
 
+sub export {
+  my ($self) = @_;
+  croak "Attempted to export() closed db" unless $self->is_open;
+  +{ %{ $self->_tied } }
+}
+
+
 sub set {
   my ($self, $key, $val) = @_;
   croak "set() called with no key specified" unless defined $key;
-  croak "Attempted to set() values on closed db" unless $self->is_open;
+  croak "Attempted to set() on closed db" unless $self->is_open;
+  croak "Attempted to set() on read-only db"
+    if $self->_lockmode == LOCK_SH;
   $self->_tied->{$key} = $val
 }
 
@@ -141,16 +154,13 @@ sub delete {
   my ($self, $key) = @_;
   croak "delete() called with no key specified" unless defined $key;
   croak "Attempted to delete() from closed db" unless $self->is_open;
+  croak "Attempted to delete() on read-only db"
+    if $self->_lockmode == LOCK_SH;
   exists $self->_tied->{$key} ?
     CORE::delete( $self->_tied->{$key} )
     : ()
 }
 
-sub export {
-  my ($self) = @_;
-  croak "Attempted to export() closed db" unless $self->is_open;
-  +{ %{ $self->_tied } }
-}
 
 sub get_db {
   my ($self) = @_;
