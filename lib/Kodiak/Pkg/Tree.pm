@@ -1,6 +1,5 @@
 package Kodiak::Pkg::Tree;
 use strict; use warnings;
-use Carp;
 
 use Kodiak::Base;
 use Kodiak::Pkg::Tree::Node;
