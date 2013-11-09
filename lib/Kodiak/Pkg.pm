@@ -1,5 +1,6 @@
 package Kodiak::Pkg;
 use Kodiak::Base;
+use Kodiak::Pkg::Action;
 
 # Identifiers:
 has [qw/
@@ -38,7 +39,7 @@ has settings    => sub { +{} };
 
 
 # Build phases:
-has [qw/
+our @BuildPhases = qw/
   pl_init
   pl_fetch
   pl_unpack
@@ -46,7 +47,14 @@ has [qw/
   pl_test
   pl_preinst
   pl_install
-/];
+  pl_postinst
+  pl_prerm
+  pl_postrm
+/;
+
+has \@BuildPhases;
+
+has _executed_phases => sub { [] };
 
 
 sub new {
@@ -69,6 +77,9 @@ sub new {
   $self
 }
 
+
+# Helpers:
+
 sub _create_pkg_atom {
   my ($self) = @_;
   join '/', 
@@ -78,6 +89,33 @@ sub _create_pkg_atom {
     $self->slot
 }
 
+
+# Action dispatch:
+
+sub execute_action {
+  my ($self, $action) = splice @_, 0, 2;
+  my $obj = Kodiak::Pkg::Action->new_action( $action => @_ );
+  $obj->execute($self)
+}
+
+
+# Managing build phases:
+
+sub executed_phase {
+  my ($self, $phase) = @_;
+  push @{ $self->_executed_phases }, $phase;
+  $self->get_next_phase($phase)
+}
+
+sub get_next_phase {
+  my ($self, $phase) = @_;
+  my $i = 0;
+  BUILDPHASE: for my $possible (@BuildPhases) {
+    return $BuildPhases[$i+1] if $possible eq $phase;
+    last BUILDPHASE if $i++ >= $#BuildPhases;
+  }
+  confess "Unknown build phase $phase, cannot get next!"
+}
 
 
 # FIXME

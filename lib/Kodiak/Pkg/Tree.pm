@@ -1,10 +1,7 @@
 package Kodiak::Pkg::Tree;
-use strict; use warnings;
-
 use Kodiak::Base;
+no warnings 'recursion';
 use Kodiak::Pkg::Tree::Node;
-
-use Scalar::Util ();
 
 has _root => sub {
   Kodiak::Pkg::Tree::Node->new(
@@ -68,7 +65,7 @@ sub scheduled {
 sub filter_via {
   my ($self, $installed) = @_;
   confess "Expected a Kodiak::DB::Installed but got $installed"
-    unless Scalar::Util::blessed($installed)
+    unless blessed($installed)
     and $installed->isa('Kodiak::DB::Installed');
 
   # FIXME incorporate build/use flags?
@@ -84,7 +81,7 @@ sub new_node_for {
   # Factory method for creation of new nodes
   my ($self, $pkg) = @_;
   confess "Expected a Kodiak::Pkg but got $pkg"
-    unless Scalar::Util::blessed($pkg)
+    unless blessed($pkg)
     and $pkg->isa('Kodiak::Pkg');
 
   # FIXME needs a complementary implementation in Pkg:

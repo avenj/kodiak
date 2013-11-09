@@ -11,7 +11,7 @@ meta:
     - "x64"
   # Option flags:
   set:
-    "nostrip"
+    nostrip: 1
 
 # templated strings:
 fetch:
@@ -28,9 +28,8 @@ pl_init: >
   # Code executed in safe compartment at pkg parse time:
   my $foo = 'bar';
   if ($foo eq 'bar') {
-    # KODI constant installed
     # Needs to present API to all build-munging methods:
-    KODI->depends_on('bar', '1.0');
+    KODI->depends_on(bar => '1.0'); # FIXME or so
     # API needs a way to save metadata for later phases:
     KODI->stash->set(bar => 1);
     # API needs a way to set up environment vars used for shelling out:
@@ -62,3 +61,11 @@ pl_preinst: >
 pl_install: >
   # ... code executed in safe compartment to install ...
 
+pl_postinst: >
+  # ... code executed in safe compartment after install ...
+
+pl_prerm: >
+  # ... before removal ...
+
+pl_postrm: >
+  # ... after removal ...
