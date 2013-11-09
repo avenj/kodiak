@@ -5,6 +5,8 @@ use Carp;
 use Kodiak::Base;
 use Kodiak::Pkg::Tree::Node;
 
+use Scalar::Util ();
+
 has _root => sub {
   Kodiak::Pkg::Tree::Node->new(
     atom => 'ROOT/ROOT/0',
@@ -13,10 +15,11 @@ has _root => sub {
 
 has _scheduled => sub { [] };
 
-sub scheduled {
-  my ($self) = shift;
-  $self->_order_deps
-}
+# FIXME
+#  Need to be able to pass in an Installed list or so;
+#  some way to present an API to installed pkg info so we can clean
+#  unneeded target atoms from the scheduled list
+
 
 sub __resolve {
   #  my $result = [];
@@ -55,6 +58,26 @@ sub _order_deps {
   __resolve( $self->_root, $scheduled, +{}, +{} );
   $self->_scheduled( $scheduled );
   $self->_scheduled
+}
+
+
+sub scheduled {
+  my ($self) = shift;
+  $self->_order_deps
+}
+
+sub filter_via {
+  my ($self, $installed) = @_;
+  confess "Expected a Kodiak::DB::Installed but got $installed"
+    unless Scalar::Util::blessed($installed)
+    and $installed->isa('Kodiak::DB::Installed');
+
+  # FIXME incorporate build/use flags?
+  #  (via attached pkg objects..? factory for these?)
+  my @res = grep {; !$installed->installed( $_->atom ) }
+    @{ $self->scheduled };
+
+  [ @res ]
 }
 
 
