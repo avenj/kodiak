@@ -1,6 +1,5 @@
 package Kodiak::DB;
 use Kodiak::Base;
-use Carp;
 
 use DB_File;
 use Fcntl ':DEFAULT', ':flock';
@@ -134,6 +133,13 @@ sub get {
   croak "get() called with no key specified" unless defined $key;
   croak "Attempted to get() from closed db" unless $self->is_open;
   $self->_tied->{$key}
+}
+
+sub exists {
+  my ($self, $key) = @_;
+  croak "exists() called with no key specified" unless defined $key;
+  croak "Attempted exists() check on closed db" unless $self->is_open;
+  exists $self->_tied->{$key}
 }
 
 sub export {

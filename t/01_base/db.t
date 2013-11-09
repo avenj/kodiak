@@ -48,6 +48,10 @@ ok $db->keys == 1, 'keys count ok';
 my $first = ($db->keys)[0];
 ok $first eq 'test', 'keys ok';
 
+# exists()
+ok $db->exists('test'), 'exists ok';
+ok !$db->exists('quux'), 'negative exists ok' for 1 .. 2;
+
 # get()
 my $ref = $db->get( 'test' );
 is_deeply $ref,
