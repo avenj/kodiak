@@ -20,9 +20,10 @@ sub import {
   { no strict 'refs'; no warnings 'redefine';
     push @{ $caller .'::ISA' }, $super;
     *{ $caller .'::has' } = sub { add_attr($caller, @_) };
+    eval "package $caller; use Carp qw/carp croak confess/;";
+    Carp::croak $@ if $@;
   }
   
-  Carp->import(qw/carp croak confess/);
   strict->import;
   warnings->import;
   utf8->import;
@@ -71,7 +72,46 @@ Kodiak::Base - Kodiak class builder
 
 =head1 SYNOPSIS
 
+  package My::Class;
+  use Kodiak::Base;
+
+  has foo => sub { 'bar' };
+  has [qw/bar baz/] => sub { 'quux' };
+
+  package My::Subclass;
+  use Kodiak::Base 'My::Class';
+
 =head1 DESCRIPTION
+
+A base class for L<Kodiak> modules, derived from L<Mojo::Base>.
+
+=head2 FUNCTIONS
+
+=head3 has
+
+  has 'foo';
+  has foo => sub { [] };
+  has [qw/foo bar baz/] => sub { +{} };
+
+Declares attributes for the current class. See L</add_attr>.
+
+=head2 METHODS
+
+=head3 new
+
+  my $obj = My::Class->new;
+  my $obj = My::Class->new(foo => []);
+
+The provided constructor creates HASH-type objects; attribute values can be
+passed, in which case their default value coderef is never called (see
+L</add_attr>).
+
+=head3 add_attr
+
+  $obj->add_attr(foo => sub { [] });
+  My::Class->add_attr('foo');
+
+Add a new attribute to an object or class, with an optional (lazy) default.
 
 =head1 AUTHOR
 
