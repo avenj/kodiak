@@ -16,6 +16,12 @@ use strict; use warnings;
 # Carp imported:
 can_ok 'My::Class', qw/carp croak confess/;
 
+# List::Util imported:
+can_ok 'My::Class', qw/first reduce/;
+
+# Scalar::Util imported:
+can_ok 'My::Class', qw/blessed refaddr/;
+
 # attrib defaults:
 my $obj = My::Class->new;
 ok $obj->foo eq 'bar', 'constant attr default ok';

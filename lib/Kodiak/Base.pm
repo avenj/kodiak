@@ -3,6 +3,8 @@ use strict; use warnings;
 
 use Carp ();
 use feature ();
+use List::Util ();
+use Scalar::Util ();
 
 sub import {
   my $class = shift;
@@ -20,7 +22,12 @@ sub import {
   { no strict 'refs'; no warnings 'redefine';
     push @{ $caller .'::ISA' }, $super;
     *{ $caller .'::has' } = sub { add_attr($caller, @_) };
-    eval "package $caller; use Carp qw/carp croak confess/;";
+    eval qq{
+      package $caller; 
+      use Carp qw/carp croak confess/;
+      use List::Util qw/first reduce/;
+      use Scalar::Util qw/blessed refaddr/;
+    };
     Carp::croak $@ if $@;
   }
   
@@ -84,6 +91,18 @@ Kodiak::Base - Kodiak class builder
 =head1 DESCRIPTION
 
 A base class for L<Kodiak> modules, derived from L<Mojo::Base>.
+
+Packages that C<use> this class import the functions described in
+L</FUNCTIONS> & inherit the methods described in L</METHODS>.
+
+In addition, packages automatically C<use> a few helpful modules:
+
+  use Kodiak::Base;
+  # Same as:
+  use strict; use warnings;
+  use Carp qw/ carp croak confess /;
+  use List::Util qw/ first reduce /;
+  use Scalar::Util qw/ blessed refaddr /;
 
 =head2 FUNCTIONS
 
