@@ -8,10 +8,9 @@ use POSIX ();
 
 use Time::HiRes 'sleep';
 
-# FIXME
-#  - Ability to pass in exec-ables easily?
-#    (look at POE::Wheel::Run?)
-#  - Ability to change user/group
+
+sub TEMPFILE_PREFIX () { 'KodiakForkUtil-' }
+
 
 has max_proc => 5;
 has temp_dir => sub {
@@ -22,15 +21,26 @@ has _in_child   => 0;
 has _parent_pid => undef;
 has _procs  => sub { +{} };
 
+# FIXME on_finish_cb should provide per-pid (or 0) callbacks
+#  see Parallel::ForkManager
 has [qw/
   on_start_cb
-  on_finish_cb
   on_wait_cb
   on_wait_cb_interval
 /];
 
+# Keyed on PID (or 0):
+has _on_finish_cb => sub { +{} };
+sub on_finish_cb {
+  my ($self, $pid, $cb) = @_;
+  $pid ||= 0;
+  if ($cb) {
+    $self->_on_finish_cb->{$pid} = $cb;
+    return $self
+  }
+  $self->_on_finish_cb->{$pid}
+}
 
-sub TEMPFILE_PREFIX () { 'KodiakForkUtil-' }
 
 sub new {
   my $class = shift;
@@ -122,6 +132,7 @@ sub _wait_one_child {
     $child_pid = $self->_do_waitpid(-1, $flags);
     last WAIT if $child_pid == 0 || $child_pid == -1;
     redo WAIT unless exists $self->_procs->{$child_pid};
+
     my $tag = delete $self->_procs->{$child_pid};
 
     my $retrieved;
@@ -139,11 +150,12 @@ sub _wait_one_child {
     }
 
     $self->_do_on_finish(
-      $child_pid,
-      $? >> 8,
-      $? & 0x7f,
-      $? & 0x80 ? 1 : 0,
-      $retrieved
+      $child_pid,          # deceased child PID
+      $? >> 8,             # exit val
+      $tag,                # process tag
+      $? & 0x7f,           # exit signal
+      $? & 0x80 ? 1 : 0,   # true if core dumped
+      $retrieved           # serialized data, if any
     );
 
     last WAIT
@@ -214,8 +226,10 @@ sub _do_on_start {
 
 sub _do_on_finish {
   my $self = shift;
-  if (defined $self->on_finish_cb) {
-    return $self->on_finish_cb(@_)
+  my $pid  = $_[0] ||= 0;
+  if (my $code = $self->on_finish_cb->{$pid}) {
+    # Code ref passed $pid, @params:
+    return $code->(@_)
   }
   ()
 }
