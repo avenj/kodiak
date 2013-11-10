@@ -17,16 +17,16 @@ sub import {
 
   $super = $class unless $super;
 
-  my $caller = caller;
+  my $target = caller;
 
   { no strict 'refs'; no warnings 'redefine';
-    push @{ $caller .'::ISA' }, $super;
-    *{ $caller .'::has' } = sub { add_attr($caller, @_) };
+    push @{ $target .'::ISA' }, $super;
+    *{ $target .'::has' } = sub { add_attr($target, @_) };
     eval qq{
-      package $caller; 
+      package $target; 
       use Carp qw/carp croak confess/;
       use List::Util qw/first reduce/;
-      use Scalar::Util qw/blessed refaddr/;
+      use Scalar::Util qw/blessed refaddr reftype/;
     };
     Carp::croak $@ if $@;
   }
@@ -40,7 +40,8 @@ sub import {
 
 sub new {
   my $class = shift;
-  bless @_ ? @_ > 1 ? {@_} : {%{$_[0]}} : {}, ref $class || $class
+  bless @_ ? @_ > 1 ? +{@_} : +{%{$_[0]}} : +{}, 
+    ref $class || $class
 }
 
 sub add_attr {
@@ -102,7 +103,7 @@ In addition, packages automatically C<use> a few helpful modules:
   use strict; use warnings;
   use Carp qw/ carp croak confess /;
   use List::Util qw/ first reduce /;
-  use Scalar::Util qw/ blessed refaddr /;
+  use Scalar::Util qw/ blessed refaddr reftype /;
 
 =head2 FUNCTIONS
 
