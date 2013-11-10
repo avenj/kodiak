@@ -1,5 +1,6 @@
-package Kodiak::Util::Fork;
+package Kodiak::Util::Fork; # Forked from Parallel::ForkManager
 use Kodiak::Base;
+use Kodiak::Stash;
 
 use File::Spec ();
 use File::Temp ();
@@ -9,7 +10,7 @@ use POSIX ();
 use Time::HiRes 'sleep';
 
 
-sub TEMPFILE_PREFIX () { 'KodiakForkUtil-' }
+sub TEMPFILE_PREFIX () { 'kodiakf-' }
 
 
 has max_proc => 5;
@@ -19,7 +20,7 @@ has temp_dir => sub {
 
 has _in_child   => 0;
 has _parent_pid => undef;
-has _procs  => sub { +{} };
+has _procs  => sub { Kodiak::Stash->new };
 
 # FIXME on_finish_cb should provide per-pid (or 0) callbacks
 #  see Parallel::ForkManager
@@ -30,15 +31,15 @@ has [qw/
 /];
 
 # Keyed on PID (or 0):
-has _on_finish_cb => sub { +{} };
+has _on_finish_cb => sub { Kodiak::Stash->new };
 sub on_finish_cb {
   my ($self, $pid, $cb) = @_;
   $pid ||= 0;
   if ($cb) {
-    $self->_on_finish_cb->{$pid} = $cb;
+    $self->_on_finish_cb->set($pid => $cb);
     return $self
   }
-  $self->_on_finish_cb->{$pid}
+  $self->_on_finish_cb->get($pid)
 }
 
 
@@ -60,7 +61,7 @@ sub start {
   confess "Attempted to ->start from child process"
     if $self->_in_child;
 
-  while ($self->max_proc && keys(%{ $self->_procs}) >= $self->max_proc) {
+  while ($self->max_proc && $self->_proc->keys >= $self->max_proc) {
     $self->_do_on_wait;
     $self->_wait_one_child(
       defined $self->_on_wait_interval ? POSIX::WNOHANG : ()
@@ -73,7 +74,7 @@ sub start {
     my $pid = fork;
     croak "Failed to fork: $!" unless defined $pid;
     if ($pid) {
-      $self->_procs->{$pid} = $tag;
+      $self->_procs->set($pid => $tag);
       $self->_do_on_start($pid => $tag);
     } else {
       $self->in_child(1)
@@ -81,9 +82,9 @@ sub start {
     return $pid
   } else {
     # max_proc = 0
-    $self->_procs->{$$} = $tag;
+    $self->_procs->set($$ => $tag);
     $self->_do_on_start($$ => $tag);
-    return 0  # Pretend I'm the child
+    return 0  # pretend I'm the child
   }
 }
 
@@ -106,8 +107,11 @@ sub finish {
   }
 
   if ($self->max_proc == 0) {
-    $self->_do_on_finish($$, $exitcode, $self->_procs->{$$}, 0, 0, $ref);
-    delete $self->_procs->{$$}
+    # fake it
+    $self->_do_on_finish(
+      $$, $exitcode, $self->_procs->get($$), 0, 0, $ref
+    );
+    $self->_procs->delete($$)
   }
 
   0
@@ -116,7 +120,7 @@ sub finish {
 
 sub _wait_children {
   my ($self) = @_;
-  return unless keys %{ $self->_procs };
+  return unless $self->_procs->keys;
 
   my $child_pid;
   do { $child_pid = $self->_wait_one_child(POSIX::WNOHANG) }
@@ -131,9 +135,9 @@ sub _wait_one_child {
   WAIT: while (1) {
     $child_pid = $self->_do_waitpid(-1, $flags);
     last WAIT if $child_pid == 0 || $child_pid == -1;
-    redo WAIT unless exists $self->_procs->{$child_pid};
+    redo WAIT unless $self->_procs->exists($child_pid);
 
-    my $tag = delete $self->_procs->{$child_pid};
+    my $tag = $self->_procs->delete($child_pid);
 
     my $retrieved;
     my $tempfile = File::Spec->catfile(
@@ -166,7 +170,7 @@ sub _wait_one_child {
 
 sub wait_all_children {
   my ($self) = @_;
-  while (keys %{ $self->_procs }) {
+  while ($self->_procs->keys) {
     $self->_do_on_wait;
     $self->_wait_one_child(
       defined $self->on_wait_cb_interval ?
@@ -227,7 +231,7 @@ sub _do_on_start {
 sub _do_on_finish {
   my $self = shift;
   my $pid  = $_[0] ||= 0;
-  if (my $code = $self->on_finish_cb->{$pid}) {
+  if (my $code = $self->on_finish_cb($pid)) {
     # Code ref passed $pid, @params:
     return $code->(@_)
   }
