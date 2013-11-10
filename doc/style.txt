@@ -1,0 +1,18 @@
+No non-core (specifically 5.14) dependencies
+
+Hash references should be prefixed with unary + for readability:
+  +{ foo => 1 }
+
+{; ... } preferred over { ... } for blocks:
+  map {; foo($_) } @bar
+
+if/elsif/else:
+  if (foo) {
+    ...
+  } elsif (bar) {
+    ...
+  } else {
+    ...
+  }
+  
+

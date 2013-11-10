@@ -1,0 +1,9 @@
+---
+tls:
+  desc: 'TLS support'
+
+ssl:
+  desc: 'OpenSSL support'
+
+sqlite:
+  desc: 'SQLite support'

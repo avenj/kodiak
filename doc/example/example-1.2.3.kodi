@@ -20,9 +20,12 @@ fetch:
 # hard-coded dependencies (more can be added in pl_init):
 depends:
   build:
-    - "lang/perl"
+    - "(perl | plugin): lang/perl"
+    - "(!minimal): lang/python"
   runtime:
-    - "app/foobar-0.1"
+    - "admin/foobar-0.1"
+  test:
+    - "lang/tcl"
 
 pl_init: >
   # Code executed in safe compartment at pkg parse time:
