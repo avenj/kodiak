@@ -20,7 +20,7 @@ can_ok 'My::Class', qw/carp croak confess/;
 can_ok 'My::Class', qw/first reduce/;
 
 # Scalar::Util imported:
-can_ok 'My::Class', qw/blessed refaddr/;
+can_ok 'My::Class', qw/blessed refaddr reftype/;
 
 # attrib defaults:
 my $obj = My::Class->new;

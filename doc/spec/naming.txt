@@ -1,0 +1,5 @@
+package atoms:
+  (category):(name):(version):(slot)
+
+categories can be recursive:
+  lang/perl/modules:App-perlbrew:0.26:0

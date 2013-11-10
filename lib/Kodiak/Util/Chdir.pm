@@ -32,7 +32,7 @@ sub cd ($&) {
 
 =head1 AUTHOR
 
-Derived from L<File::Cd> by Ahmad Syaltut.
+Derived from L<File::cd> by Ahmad Syaltut.
 
 Adapted to L<Kodiak> by Jon Portnoy <avenj@cobaltirc.org>
 

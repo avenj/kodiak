@@ -1,6 +1,6 @@
 package Kodiak::DepTree;
-use Kodiak::Base;
-no warnings 'recursion';
+use Kodiak::Base; no warnings 'recursion';
+
 use Kodiak::DepTree::Node;
 
 has _root => sub {

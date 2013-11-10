@@ -28,8 +28,9 @@ $nodeC->add_depends($nodeE); # C (and B) dep on E
 
 ok $tree->add_root_nodes($nodeA), 'add_root_nodes single ok';
 my @result = map {; $_->atom } @{ $tree->scheduled };
+pop @result;  # Remove root of deptree (last item)
 is_deeply \@result,
-  [ 'D', 'E', 'C', 'B', 'A', 'ROOT/ROOT/0' ],
+  [ 'D', 'E', 'C', 'B', 'A' ],
   'simple non-circular deps resolved ok'
     or diag explain \@result;
 
