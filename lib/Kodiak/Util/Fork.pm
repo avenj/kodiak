@@ -61,10 +61,10 @@ sub start {
   confess "Attempted to ->start from child process"
     if $self->_in_child;
 
-  while ($self->max_proc && $self->_proc->keys >= $self->max_proc) {
+  while ($self->max_proc && $self->_procs->keys >= $self->max_proc) {
     $self->_do_on_wait;
     $self->_wait_one_child(
-      defined $self->_on_wait_interval ? POSIX::WNOHANG : ()
+      defined $self->on_wait_cb_interval ? POSIX::WNOHANG : ()
     )
   }
 
@@ -77,7 +77,7 @@ sub start {
       $self->_procs->set($pid => $tag);
       $self->_do_on_start($pid => $tag);
     } else {
-      $self->in_child(1)
+      $self->_in_child(1)
     }
     return $pid
   } else {
@@ -90,7 +90,7 @@ sub start {
 
 sub finish {
   my ($self, $exitcode, $ref) = @_;
-  if ($self->in_child) {
+  if ($self->_in_child) {
     if (defined $ref) {
       my $destfile = File::Spec->catfile(
         $self->temp_dir,
