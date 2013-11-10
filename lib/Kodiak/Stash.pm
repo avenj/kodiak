@@ -17,6 +17,10 @@ sub clone {
 
 sub export { %{ $_[0] } }
 
+sub exists {
+  CORE::exists $_[0]->{ $_[1] }
+}
+
 sub get {
   @_ > 2 ? @{ $_[0] }{ @_[1 .. $#_] } : $_[0]->{ $_[1] }
 }
