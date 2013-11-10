@@ -29,7 +29,14 @@ has [qw/
 /];
 
 has depends_hash => sub {
-  +{ build => [], runtime => [] }
+  +{ 
+    map {; $_ => [] } qw/ 
+      build
+      runtime
+      test
+      recommends
+    /
+  } 
 };
 
 has keywords    => sub { [] };
@@ -82,7 +89,7 @@ sub new {
 
 sub _create_pkg_atom {
   my ($self) = @_;
-  join '/', 
+  join ':', 
     $self->category, 
     $self->name, 
     $self->version, 
@@ -94,21 +101,64 @@ sub _create_pkg_atom {
 
 sub execute_action {
   my ($self, $action) = splice @_, 0, 2;
+  confess "Expected an Action name" unless defined $action;
   my $obj = Kodiak::Pkg::Action->new_action( $action => @_ );
   $obj->execute($self)
 }
 
 
+# Managing dependency list:
+sub add_depends {
+  my ($self, $type, @atoms) = @_;
+  # FIXME
+}
+
+sub remove_depends {
+  my ($self, $type, @atoms) = @_;
+  # FIXME support 'any' type?
+}
+
+sub list_depends_types {
+  my ($self) = @_;
+  keys %{ $self->depends_hash }
+}
+
+sub list_depends {
+  my ($self, $type) = @_;
+  confess "Expected a dependency type or 'any'" unless defined $type;
+  if ($type eq 'any') {
+    map {; @{ $self->depends_hash->{$_} } $self->list_depends_types
+  }
+  @{ $self->depends_hash->{$type} || [] }
+}
+
+sub depends_on {
+  my ($self, $type, $atom) = @_;
+  confess "Expected a dependency type or 'any' and a pkg atom"
+    unless defined $atom;
+  my @depends = $type eq 'any' ? $self->list_depends('any')
+    : $self->list_depends($type);
+  !! first {; $_ eq $atom } @depends
+}
+
+
 # Managing build phases:
 
-sub executed_phase {
+sub push_executed_phase {
   my ($self, $phase) = @_;
+  confess "Expected a build phase" unless defined $phase;
   push @{ $self->_executed_phases }, $phase;
   $self->get_next_phase($phase)
 }
 
+sub pop_executed_phase {
+  my ($self) = @_;
+  pop @{ $self->_executed_phases }
+}
+
 sub get_next_phase {
   my ($self, $phase) = @_;
+  confess "Expected a build phase" unless defined $phase;
   my $i = 0;
   BUILDPHASE: for my $possible (@BuildPhases) {
     return $BuildPhases[$i+1] if $possible eq $phase;
@@ -116,6 +166,21 @@ sub get_next_phase {
   }
   confess "Unknown build phase $phase, cannot get next!"
 }
+
+sub list_prereq_phases {
+  my ($self, $phase) = @_;
+  confess "Invalid phase specified: '$phase'"
+    unless defined $phase
+    and first {; $_ eq $phase } @BuildPhases;
+  my @needed;
+  NEEDED: for my $prereq (@BuildPhases) {
+    last NEEDED if $prereq eq $phase;
+    push @needed, $prereq
+  }
+  @needed
+}
+
+
 
 
 # FIXME
