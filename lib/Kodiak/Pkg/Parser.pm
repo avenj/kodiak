@@ -11,7 +11,7 @@ sub get_backend_obj {
   return $self->_backend_obj if $self->_backend_obj;
   my $parser_class = $self->backend;
   # If ->backend is already an obj, don't set _backend_obj:
-  return $parser_class if Scalar::Util::blessed($parser_class);
+  return $parser_class if blessed($parser_class);
   unless ( $parser_class->can('new') ) {
     my $file = $parser_class;
     $file =~ s{::|'}{/}g;
@@ -27,7 +27,7 @@ sub parse_from_raw {
 
   my $obj = $self->get_backend_obj->parse($data);
 
-  unless (Scalar::Util::blessed($obj) && $obj->isa('Kodiak::Pkg')) {
+  unless (blessed($obj) && $obj->isa('Kodiak::Pkg')) {
     confess "Expected to return a Kodiak::Pkg but got $obj"
   }
 

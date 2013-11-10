@@ -1,21 +1,19 @@
-package Kodiak::Pkg::Tree;
+package Kodiak::DepTree;
 use Kodiak::Base;
 no warnings 'recursion';
-use Kodiak::Pkg::Tree::Node;
+use Kodiak::DepTree::Node;
 
 has _root => sub {
-  Kodiak::Pkg::Tree::Node->new(
+  Kodiak::DepTree::Node->new(
     atom => 'ROOT:ROOT:0:0',
   );
 };
 
 has _scheduled => sub { [] };
 
-# FIXME
-#  Need to be able to pass in an Installed list or so;
-#  some way to present an API to installed pkg info so we can clean
-#  unneeded target atoms from the scheduled list
 
+# FIXME
+#  A 'found new dep' callback sub?
 
 sub __resolve {
   #  my $result = [];
@@ -85,12 +83,14 @@ sub new_node_for {
   #   - Parse $pkg -> Tree::Node
   #    - Parse $pkg deps -> Tree::Nodes
   #     - Parse further deps ... etc
-  my $node = Kodiak::Pkg::Tree::Node->new(
+  my $node = Kodiak::DepTree::Node->new(
     atom    => $pkg->atom,
+    payload => $pkg,
   );
 
   for my $atom (@{ $pkg->dependency_atoms }) {
     # FIXME need an API to find pkg by atom, parse, return Pkg obj
+    #  flyweight Pkg::Factory?
   }
 }
 

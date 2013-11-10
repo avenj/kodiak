@@ -1,17 +1,17 @@
 use Test::More;
 use strict; use warnings;
 
-use Kodiak::Pkg::Tree::Node;
-use Kodiak::Pkg::Tree;
+use Kodiak::DepTree::Node;
+use Kodiak::DepTree;
 
 my $mknode = sub {
   my ($named) = @_;
-  Kodiak::Pkg::Tree::Node->new(
+  Kodiak::DepTree::Node->new(
     atom => $named,
   );
 };
 
-my $tree = Kodiak::Pkg::Tree->new;
+my $tree = Kodiak::DepTree->new;
 
 my $nodeA = $mknode->('A');
 my $nodeB = $mknode->('B');

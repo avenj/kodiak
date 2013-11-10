@@ -21,4 +21,12 @@ sub _build_pkg {
   # FIXME
 }
 
+
+sub regen {
+  my ($self, $pkg) = @_;
+  # FIXME
+  #  Attempt to regenerate .kodi as a string based on $pkg
+}
+
+
 1;
