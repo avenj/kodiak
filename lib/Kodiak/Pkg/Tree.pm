@@ -5,7 +5,7 @@ use Kodiak::Pkg::Tree::Node;
 
 has _root => sub {
   Kodiak::Pkg::Tree::Node->new(
-    atom => 'ROOT/ROOT/0',
+    atom => 'ROOT:ROOT:0:0',
   );
 };
 
@@ -63,17 +63,11 @@ sub scheduled {
 }
 
 sub filter_via {
-  my ($self, $installed) = @_;
-  confess "Expected a Kodiak::DB::Installed but got $installed"
-    unless blessed($installed)
-    and $installed->isa('Kodiak::DB::Installed');
+  my ($self, $filter) = @_;
+  confess "Expected a CODE ref but got $filter"
+    unless ref $filter;
 
-  # FIXME incorporate build/use flags?
-  #  (via attached pkg objects..? factory for these?)
-  my @res = grep {; !$installed->installed( $_->atom ) }
-    @{ $self->scheduled };
-
-  [ @res ]
+  [ grep {; $filter->( $_ ) } @{ $self->scheduled } ]
 }
 
 
