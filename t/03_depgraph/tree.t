@@ -34,6 +34,15 @@ is_deeply \@result,
   'simple non-circular deps resolved ok'
     or diag explain \@result;
 
+# filtered
+my $code = sub { $_->atom eq 'C' ? 0 : 1 };
+@result = map {; $_->atom } @{ $tree->filtered_via($code) };
+pop @result;
+is_deeply \@result,
+  [ 'D', 'E', 'B', 'A' ],
+  'filtered_via ok'
+    or diag explain \@result;
+
 # circular dep
 $nodeD->add_depends($nodeB);
 eval {; $tree->scheduled };
