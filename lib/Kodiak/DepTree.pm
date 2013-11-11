@@ -3,23 +3,23 @@ use Kodiak::Base; no warnings 'recursion';
 
 use Kodiak::DepTree::Node;
 
+
+# Callback for resolved nodes (useful for manipulating payloads f.ex):
+has node_resolved_cb => sub { };
+
+
 has _root => sub {
   Kodiak::DepTree::Node->new(
     atom => 'ROOT:ROOT:0:0',
   );
 };
 
-has _scheduled => sub { [] };
-
-
-# FIXME
-#  A 'found new dep' callback sub?
 
 sub __resolve {
   #  my $result = [];
   #  __resolve( $startnode, $result, +{}, +{} )
   #                                # ^ last two params are discarded later
-  my ($node, $resolved, $res_byatom, $unresolved) = @_;
+  my ($self, $node, $resolved, $res_byatom, $unresolved) = @_;
   # Add this atom to the unresolved list:
   $unresolved->{ $node->atom } = 1;
 
@@ -35,7 +35,7 @@ sub __resolve {
     }
 
     # Recurse into dependency's node:
-    __resolve($edge, $resolved, $res_byatom, $unresolved)
+    __resolve($self, $edge, $resolved, $res_byatom, $unresolved)
   }
 
   # Successful resolution;
@@ -44,23 +44,21 @@ sub __resolve {
   # in the $res_byatom hash for quick checking on further iterations:
   push @$resolved, $node;
   $res_byatom->{ $node->atom } = delete $unresolved->{ $node->atom };
-}
 
-sub _order_deps {
-  my ($self) = @_;
-  my $scheduled = [];
-  __resolve( $self->_root, $scheduled, +{}, +{} );
-  $self->_scheduled( $scheduled );
-  $self->_scheduled
+  if (my $code = $self->node_resolved_cb) {
+    $code->( $node )
+  }
 }
 
 
 sub scheduled {
   my ($self) = shift;
-  $self->_order_deps
+  my $scheduled = [];
+  __resolve( $self, $self->_root, $scheduled, +{}, +{} );
+  $scheduled
 }
 
-sub filter_via {
+sub filtered_via {
   my ($self, $filter) = @_;
   confess "Expected a CODE ref but got $filter"
     unless ref $filter;
@@ -69,43 +67,100 @@ sub filter_via {
 }
 
 
-sub new_node_for {
-  # Factory method for creation of new nodes
-  my ($self, $pkg) = @_;
-  confess "Expected a Kodiak::Pkg but got $pkg"
-    unless blessed($pkg)
-    and $pkg->isa('Kodiak::Pkg');
-
-  # FIXME needs a complementary implementation in Pkg:
-  # FIXME
-  #  - Create a Pkg::Tree::Node for this $pkg
-  #  - Recursively add dependency mappings:
-  #   - Parse $pkg -> Tree::Node
-  #    - Parse $pkg deps -> Tree::Nodes
-  #     - Parse further deps ... etc
-  my $node = Kodiak::DepTree::Node->new(
-    atom    => $pkg->atom,
-    payload => $pkg,
-  );
-
-  for my $atom (@{ $pkg->dependency_atoms }) {
-    # FIXME need an API to find pkg by atom, parse, return Pkg obj
-    #  flyweight Pkg::Factory?
-  }
-}
-
 sub add_root_nodes {
   my ($self, @nodes) = @_;
   $self->_root->add_depends($_) for @nodes;
-  $self->_order_deps;
   $self
 }
 
-sub remove_root_nodes {
-  # FIXME remove a node from _root (if possible)
-  #  & reorder the tree
-}
 
+=pod
 
+=head1 NAME
+
+Kodiak::DepTree - Build dependency graphs
+
+=head1 SYNOPSIS
+
+  use Kodiak::DepTree;
+  use Kodiak::DepTree::Node;
+
+  sub _mknode {
+    my ($named) = @_;
+    Kodiak::DepTree->new( atom => $named )
+  }
+
+  my $tree = Kodiak::DepTree->new;
+
+  # Create nodes A through E:
+  my $node = +{ map $_ => $mknode->($_) } qw/ A B C D E /;
+
+  # Set up some relationships
+  # A depends on B and C:
+  $node->{A}->add_depends( $node->{B} );
+  $node->{A}->add_depends( $node->{D} );
+  # B depends on C and E:
+  $node->{B}->add_depends( $node->{C} );
+  $node->{B}->add_depends( $node->{E} );
+  # C depends on E and E:
+  $node->{C}->add_depends( $node->{D} );
+  $node->{C}->add_depends( $node->{E} );
+
+  # Add start-point node(s) to the tree, in this case 'A':
+  $tree->add_root_nodes( $node->{A} );
+
+  # Retrieve ordered dependency schedule:
+  for my $node (@{ $tree->scheduled }) {
+    my $item_named = $node->atom;
+    # ...
+  }
+
+=head1 DESCRIPTION
+
+A generic dependency resolver. 
+
+The tree is composed of L<Kodiak::DepTree::Node> objects; see that POD for
+details.
+
+=head2 METHODS
+
+=head3 add_root_nodes
+
+  $tree->add_root_nodes( @wanted_nodes );
+
+Add initial nodes to the tree.
+
+=head3 scheduled
+
+  my @nodes = @{ $tree->scheduled };
+
+Resolves the dependency tree and returns an ARRAY containing the ordered list
+of nodes.
+
+An exception is thrown if circular dependencies are detected.
+
+Every call to L</scheduled> forces a fresh graph resolution. Node dependencies can
+change dynamically, so it is only safe to reuse the L</scheduled> list if
+you're sure nodes aren't changing underneath you.
+
+=head3 filtered_via
+
+  my $filter = sub {
+    my ($node) = @_;
+    # Filter nodes named 'foo':
+    return if $node->atom eq 'foo';
+    1
+  };
+
+  my @nodes = @{ $tree->filtered_via($filter) };
+
+Sugar for forcing a re-schedule & executing a C<grep> against the list in one
+call.
+
+=head1 AUTHOR
+
+Jon Portnoy <avenj@cobaltirc.org>
+
+=cut
 
 1;
