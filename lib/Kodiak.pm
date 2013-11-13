@@ -1,5 +1,34 @@
 package Kodiak;
-use strict; use warnings;
+use Kodiak::Base;
+use Kodiak::CmdEngine;
+
+has cmd_engine => sub { Kodiak::CmdEngine->new };
+
+has config => sub { };
+
+
+has _installed_db => sub {
+  my ($self) = @_;
+  Kodiak::DB::Installed->new(
+    install_db_path => $config->paths->get('install_db')
+  )
+};
+
+
+sub new {
+  my $class = shift;
+  my $self  = $class->SUPER::new(@_);
+
+  state $required = [ qw/
+    config
+  / ];
+
+  for (@$required) {
+    croak "Missing required attribute '$_'" unless defined $self->$_
+  }
+
+  $self
+}
 
 
 1;
