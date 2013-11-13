@@ -1,4 +1,4 @@
-package Kodiak::UserAgent;
+package Kodiak::Util::Fetch;
 use Kodiak::Base;
 
 use Kodiak::Util::Chdir;
