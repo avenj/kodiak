@@ -1,7 +1,8 @@
-package ModuleFails;
+package Kodiak::T::ModuleFails;
 use strict;
 
-sub foo { print "foo\n" }
-sub bar { print "$bar\n" }
+sub foo { print "foo" }
+
+sub bar { print "$bar" }
 
 1;

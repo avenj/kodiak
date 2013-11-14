@@ -37,7 +37,7 @@ sub load_package {
   my ($pkg) = @_;
   confess "Expected a package name" unless defined $pkg;
   my $died;
-  return 1 unless $died = _get_require_failure($pkg);
+  return $pkg unless $died = _get_require_failure($pkg);
   confess "Failed to load '$pkg': $died"
 }
 

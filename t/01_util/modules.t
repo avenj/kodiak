@@ -7,7 +7,8 @@ use Kodiak::Util::Modules ':all';
 
 # external pkg, succeeds
 my $succeeds = 'Kodiak::T::ModuleSucceeds';
-ok load_package($succeeds),       'load_package ok';
+ok load_package($succeeds) eq $succeeds, 'load_package ok';
+
 ok $succeeds->foo,                'pkg loaded ok';
 ok package_is_loaded($succeeds),  'package_is_loaded ok';
 ok unload_package($succeeds),     'unload_package ok';
