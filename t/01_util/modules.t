@@ -22,7 +22,7 @@ eval {; load_package($failing) };
 like $@, qr/^Failed to load/,    'load_package threw exception';
 ok !package_is_loaded($failing), 'negative package_is_loaded';
 
-my $died = load_or_return_error('Kodiak::T::ModuleFails');
+my $died = load_or_return_error($failing);
 like $died, qr/explicit/, 'load_or_return_error ok';
 
 # inline pkg
