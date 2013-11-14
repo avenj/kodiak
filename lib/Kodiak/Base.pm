@@ -1,18 +1,18 @@
 package Kodiak::Base;
 use strict; use warnings;
-
 use Carp ();
-use feature ();
-use List::Util ();
-use Scalar::Util ();
+
+use feature       ();
+use List::Util    ();
+use Scalar::Util  ();
+
+use Kodiak::Util::Modules ();
 
 sub import {
   my $class = shift;
   my $super = shift;
-  if ($super && !$super->can('new')) {
-    my $file = $super;
-    $file =~ s{::|'}{/}g;
-    require "$file.pm";
+  if ($super && !Kodiak::Util::Modules::package_is_loaded($super)) {
+    Kodiak::Util::Modules::load_package($super)
   }
 
   $super = $class unless $super;

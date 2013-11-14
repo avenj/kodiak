@@ -1,17 +1,14 @@
 package Kodiak::Pkg::Action;
-use Kodiak::Base;
+use Kodiak::Base 'Kodiak::CmdEngine';
 
+use Kodiak::Util::Modules 'load_package';
 
-sub new_action {
-  my (undef, $action) = splice @_, 0, 2;
-  $action = ucfirst $action;
-  my $pkg = __PACKAGE__ .'::'. $action;
-  unless ($pkg->can('new')) {
-    my $file = $pkg;
-    $pkg =~ s{::|'}{/}g;
-    require "$file.pm"
-  }
-  $pkg->new(@_)
+sub create {
+  my ($self, $action) = splice @_, 0, 2;
+  confess "Expected a Kodiak::Pkg::Action class name"
+    unless defined $action;
+  my $target = 'Kodiak::Pkg::Action'.ucfirst($action);
+  load_package($target)->new(@_)
 }
 
 1;

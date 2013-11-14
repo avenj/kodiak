@@ -1,6 +1,8 @@
 package Kodiak::Pkg::Parser;
 use Kodiak::Base;
 
+use Kodiak::Util::Modules 'load_package';
+
 # Backend object or class:
 has backend => sub { 'Kodiak::Pkg::Parser::Kodi' };
 
@@ -12,12 +14,7 @@ sub get_backend_obj {
   my $parser_class = $self->backend;
   # If ->backend is already an obj, don't set _backend_obj:
   return $parser_class if blessed($parser_class);
-  unless ( $parser_class->can('new') ) {
-    my $file = $parser_class;
-    $file =~ s{::|'}{/}g;
-    require "$file.pm";
-  }
-  $self->_backend_obj( $parser_class->new );
+  $self->_backend_obj( load_package($parser_class)->new );
   $self->_backend_obj
 }
 

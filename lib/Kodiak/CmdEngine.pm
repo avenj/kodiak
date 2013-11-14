@@ -1,6 +1,8 @@
 package Kodiak::CmdEngine;
 use Kodiak::Base;
 
+use Kodiak::Util::Modules 'load_package';
+
 has playback_depth => sub { 10 };
 
 has _cmd_stack  => sub { [] };
@@ -10,12 +12,7 @@ sub create {
   my ($self, $cmd) = splice @_, 0, 2;
   confess "Expected a Kodiak::Cmd class name" unless defined $cmd;
   my $target = 'Kodiak::Cmd::'.ucfirst($cmd);
-  unless ($target->can('new')) {
-    my $file = $target;
-    $target =~ s{::|'}{/}g;
-    require "$target.pm"
-  }
-  $target->new(@_)
+  load_package($target)->new(@_)
 }
 
 sub execute {
@@ -34,9 +31,19 @@ sub undo {
 }
 
 
+sub _reduce_stack {
+  my ($self) = @_;
+  if ((my $count = @{ $self->_cmd_stack }) > $self->playback_depth) {
+    splice @{ $self->_cmd_stack }, 0, ($count - $self->playback_depth)
+  }
+  $self
+}
+
+
 sub push_cmds {
   my $self = shift;
-  push @{ $self->_cmd_stack }, @_
+  push @{ $self->_cmd_stack }, @_;
+  $self->_reduce_stack
 }
 
 sub pop_cmd {
@@ -52,12 +59,13 @@ sub get_cmd_at {
 sub insert_cmd_at {
   my ($self, $pos, $cmd) = @_;
   splice @{ $self->_cmd_stack->[$pos] }, $pos, 0, $cmd;
-  $cmd
+  $self->_reduce_stack
 }
 
 sub set_cmd_at {
   my ($self, $pos, $cmd) = @_;
-  $self->_cmd_stack->[$pos] = $cmd
+  $self->_cmd_stack->[$pos] = $cmd;
+  $self
 }
 
 sub rm_cmd_at {
