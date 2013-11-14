@@ -21,7 +21,7 @@ sub get {
 
   my $rval;
   cd $self->dist_dir => sub {
-    $rval = system( $parsed_cmd )
+    $rval = system( split ' ', $parsed_cmd )
   };
 
   $rval == 0 ? $rval : die "Failed to fetch file ($url)!\n";
