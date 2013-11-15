@@ -1,0 +1,27 @@
+# Kodiak has-a ->config (Kodiak::Config)
+# Kodiak has-a ->parser (Kodiak::Pkg::Parser)
+  $kodi->load_pkg()
+  # Parser has-a ->backend (Kodiak::Pkg::Parser::Kodi)
+    ->parse_from_{raw,file,fh} produces a Kodiak::Pkg
+# Kodiak has-a ->tree (current Kodiak::DepTree)
+  > $kodi->load_pkg adds to current tree
+  $kodi->resolved_tree()         # 
+  $kodi->resolved_tree_list()    # these need to filter
+  $kodi->clear_tree()
+# Kodiak has-a ->installed_db (Kodiak::DB::Installed)
+  %% used by ->resolve_tree to get filtered DepTree
+
+
+###
+my $kodi = Kodiak->new(config => $kodi_config_obj);
+$kodi->load_pkg(from_file => $_) for @pkgpaths;
+# do actions + prereqs:
+for my $pkg ($kodi->resolved_tree_list) {
+  $pkg->do_all_steps( 'install' );
+
+  # (try to) do one action:
+  $pkg->do_one_step( 'check' );
+
+  $pkg->do_all_steps( 'cleanup' );
+}
+
