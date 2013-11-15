@@ -7,6 +7,7 @@ has [qw/
   category
   name
   version
+  loaded_from
 /];
 
 has slot => 0;
@@ -69,6 +70,7 @@ sub new {
   my $self  = $class->SUPER::new(@_);
 
   state $required = [ qw/
+    loaded_from
     category
     name
     version
@@ -102,7 +104,7 @@ sub _create_pkg_atom {
 sub execute_action {
   my ($self, $action) = splice @_, 0, 2;
   confess "Expected an Action name" unless defined $action;
-  my $obj = Kodiak::Pkg::Action->new_action( $action => @_ );
+  my $obj = Kodiak::Pkg::Action->create( $action => @_ );
   $obj->execute($self)
 }
 
@@ -127,7 +129,7 @@ sub list_depends {
   my ($self, $type) = @_;
   confess "Expected a dependency type or 'any'" unless defined $type;
   if ($type eq 'any') {
-    map {; @{ $self->depends_hash->{$_} } $self->list_depends_types
+    map {; @{ $self->depends_hash->{$_} } } $self->list_depends_types
   }
   @{ $self->depends_hash->{$type} || [] }
 }
