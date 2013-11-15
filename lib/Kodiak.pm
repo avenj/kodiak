@@ -1,27 +1,92 @@
 package Kodiak;
 use Kodiak::Base;
-use Kodiak::CmdEngine;
 
-has cmd_engine => sub { Kodiak::CmdEngine->new };
+use Kodiak::DB::Installed;
+use Kodiak::DepTree;
+use Kodiak::DepTree::Node;
 
 has config => sub { };
 
-
-has _installed_db => sub {
+has installed_db => sub {
   my ($self) = @_;
   Kodiak::DB::Installed->new(
-    install_db_path => $config->paths->get('install_db')
+    install_db_path => $self->config->paths->get('install_db')
   )
 };
+
+has parser => sub {
+  my ($self) = @_;
+  my $configured_parser = $self->config->packages->get('format');
+  if ($configured_parser) {
+    $configured_parser = 'Kodiak::Pkg::Parser::'.$configured_parser
+      unless index($configured_parser, '::') != -1;
+  }
+  Kodiak::Pkg::Parser->new(
+    ($configured_parser ? (backend => $configured_parser) : () ),
+  )
+};
+
+sub load_pkg {
+  my ($self, %params) = @_;
+
+
+
+  my $pkg = 
+    $params{from_file} ? $self->parser->parse_from_file($params{from_file})
+      : $params{from_fh} ? $self->parser->parse_from_fh($params{from_fh})
+      : $params{from_string} ? $self->parser->parse_from_raw($params{from_string})
+      : confess "Expected one of: from_file, from_fh, from_string"
+  ;
+
+  confess "Parser failed to return a Kodiak::Pkg"
+    unless blessed($pkg) and $pkg->isa('Kodiak::Pkg');
+
+  my $node = Kodiak::DepTree::Node->new(
+    atom    => $pkg->atom,
+    payload => $pkg,
+    depends => [],
+  );
+  # FIXME add appropriate depends to node from pkg
+  #   requires knowledge of depends types 
+  #   separate trees for 'build', 'test' deps,
+  #   attach these to pkg objs (or nodes/subclass thereof?),
+  #   it should be possible for these to be only installed within
+  #   the build env & never merged
+}
+
+
+has tree => sub { Kodiak::DepTree->new };
+
+sub resolved_tree {
+  my ($self) = @_;
+  $self->tree->filtered_via(
+    sub { $self->installed_db->installed($_->atom) ? () : 1 }
+  )
+}
+
+sub resolved_tree_list { @{ shift->resolved_tree } }
+
+sub clear_tree { shift->tree( Kodiak::DepTree->new ) }
+
 
 
 sub new {
   my $class = shift;
   my $self  = $class->SUPER::new(@_);
 
-  state $required = [ qw/
-    config
-  / ];
+  state $required = +{
+    config => sub { $_ and $_->isa('Kodiak::Config') },
+  / };
+
+  for my $attr (keys %$required) {
+    my $val = $self->$attr;
+    croak "Undefined required attribute '$attr'"
+      unless defined $val;
+    if (my $test = $required->{$attr}) {
+      croak "Value '$val' for attribute '$attr' failed type constraint"
+        unless $test->(local $_ = $val)
+    }
+  }
 
   for (@$required) {
     croak "Missing required attribute '$_'" unless defined $self->$_
